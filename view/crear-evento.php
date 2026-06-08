@@ -1,0 +1,222 @@
+<?php
+require_once "../controller/auth_guard.php";
+
+auth_require_role("organizador");
+
+$nombre = htmlspecialchars($_SESSION["nombre_completo"]);
+?>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crear Evento - Run & Eat</title>
+    <link rel="icon" type="image/png" href="../public/img/logo.png">
+    <link rel="stylesheet" href="../public/style/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo-section">
+                <img src="../public/img/logo.png" alt="Run & Eat" onclick="location.href='../index.php'">
+                <div class="nav-left">
+                    <button onclick="location.href='../index.php'">Eventos</button>
+                    <button onclick="location.href='contacto.html'">Contacto</button>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <button class="btn-registro" onclick="location.href='perfil.php'">MI PERFIL</button>
+                <form method="POST" action="../controller/UserController.php" style="display:inline;">
+                    <button type="submit" name="logout" class="btn-login">CERRAR SESIÓN</button>
+                </form>
+            </div>
+            
+        </div>
+    </header>
+
+    <main>
+        <div class="create-evento-container">
+            <?php if (isset($_SESSION["success"])): ?>
+                <div class="alert-success" style="background-color: #d4edda; color: #155724; padding: 15px; margin-bottom: 20px; border: 1px solid #c3e6cb; border-radius: 4px; text-align: center;">
+                    <?= $_SESSION["success"] ?>
+                </div>
+                <?php unset($_SESSION["success"]); ?>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION["error"])): ?>
+                <div class="alert-error" style="background-color: #f8d7da; color: #721c24; padding: 15px; margin-bottom: 20px; border: 1px solid #f5c6cb; border-radius: 4px; text-align: center;">
+                    <?= $_SESSION["error"] ?>
+                </div>
+                <?php unset($_SESSION["error"]); ?>
+            <?php endif; ?>
+
+            <div class="create-evento-form">
+                <h2>Crear Nuevo Evento</h2>
+                <p>Completa la información de tu evento gastronómico</p>
+                
+                <form method="POST" action="../controller/EventController.php" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="crearEvento">
+
+                    <div class="form-section">
+                        <h3>Información Básica</h3>
+                        
+                        <div class="form-group">
+                            <label for="titulo">Título del Evento</label>
+                            <input type="text" id="titulo" name="titulo" placeholder="Ej: Burger Run Barcelona" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="descripcion">Descripción</label>
+                            <textarea id="descripcion" name="descripcion" placeholder="Describe tu evento..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Imagen del Evento</label>
+                            <div class="file-upload" onclick="document.getElementById('file-input').click()">
+                                <div class="upload-icon"></div>
+                                <div class="upload-text">Haz clic para subir una imagen</div>
+                                <input type="file" id="file-input" name="imagen" accept="image/*" onchange="previewImage(this)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>Fecha y Ubicación</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fecha">Fecha</label>
+                                <input type="date" id="fecha" name="fecha" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="hora">Hora de Inicio</label>
+                                <input type="time" id="hora" name="hora" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ubicacion">Ubicación</label>
+                            <input type="text" id="ubicacion" name="ubicacion" placeholder="Ciudad, País" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="direccion">Dirección Completa</label>
+                            <input type="text" id="direccion" name="direccion" placeholder="Calle, número, código postal" required>
+                        </div>
+                    </div>
+
+
+                    <div class="form-section">
+                        <h3>Detalles del Evento</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="precio">Precio (€)</label>
+                                <input type="number" id="precio" name="precio" placeholder="25" min="0" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="participantes">Número de Participantes</label>
+                                <input type="number" id="participantes" name="participantes" placeholder="50" min="1" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="distancia">Distancia (km)</label>
+                                <input type="number" id="distancia" name="distancia" placeholder="5" min="0" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="nivel">Nivel</label>
+                                <select id="nivel" name="nivel" required>
+                                    <option value="">Selecciona un nivel</option>
+                                    <option value="principiante">Principiante</option>
+                                    <option value="intermedio">Intermedio</option>
+                                    <option value="avanzado">Avanzado</option>
+                                    <option value="todos">Todos los niveles</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tipo-evento">Tipo de Evento</label>
+                            <select id="tipo-evento" name="tipo-evento" required>
+                                <option value="">Selecciona el tipo</option>
+                                <?php
+                                require_once "../controller/EventController.php";
+                                $eventCtrl = new EventController();
+                                $listaCategorias = $eventCtrl->getCategorias();
+                                foreach ($listaCategorias as $cat) {
+                                    echo '<option value="' . $cat['id_categoria'] . '">' . htmlspecialchars($cat['nombre']) . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="incluye">Qué Incluye</label>
+                            <input type="text" id="incluye" name="incluye" placeholder="Ej: Comida + Bebida" required>
+                        </div>
+                    </div>
+
+
+                    <div class="form-section">
+                        <h3>Información Adicional</h3>
+                        
+                        <div class="form-group">
+                            <label for="que-traer">Qué Traer</label>
+                            <textarea id="que-traer" name="que-traer" placeholder="Lista de cosas que los participantes deben traer..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notas">Notas Adicionales</label>
+                            <textarea id="notas" name="notas" placeholder="Cualquier información extra..."></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Crear Evento</button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer__inner">
+            <div class="site-footer__brand">
+                <img src="../public/img/logo.png" alt="Run & Eat" class="site-footer__logo">
+                <p class="site-footer__tagline">La plataforma de eventos gastronómicos.</p>
+                <p class="site-footer__copy">&copy; 2026 Run &amp; Eat. Todos los derechos reservados.</p>
+            </div>
+            <div class="site-footer__nav">
+                <div class="site-footer__col">
+                    <h4 class="site-footer__col-title">Plataforma</h4>
+                    <ul>
+                        <li><a href="../index.php">Eventos</a></li>
+                        <li><a href="crear-evento.php">Crear evento</a></li>
+                        <li><a href="registro.php">Registro</a></li>
+                        <li><a href="login.php">Iniciar sesión</a></li>
+                    </ul>
+                </div>
+                <div class="site-footer__col">
+                    <h4 class="site-footer__col-title">Soporte</h4>
+                    <ul>
+                        <li><a href="faq.html">Preguntas frecuentes</a></li>
+                        <li><a href="contacto.html">Contacto</a></li>
+                    </ul>
+                </div>
+                <div class="site-footer__col">
+                    <h4 class="site-footer__col-title">Empresa</h4>
+                    <ul>
+                        <li><a href="about-us.html">Sobre nosotros</a></li>
+                        <li><a href="Ignacio.html">Ignacio Breñas</a></li>
+                        <li><a href="Gorka.html">Gorka Ramírez</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../public/scripts/script.js"></script>
+</body>
+</html>
